@@ -13,7 +13,7 @@ exports.createAppointment = async (req, res) => {
     appointmentDate,
     appointmentTime,
     hospital,
-    doctor, 
+    doctor, // Expecting the doctor ID from the frontend
     patientIssue,
     diseaseName,
     appointmentType,
@@ -80,7 +80,7 @@ exports.getAllAppointments = async (req, res) => {
       .populate({
         path: "doctor",
         select:
-          "firstName lastName specialty qualification experience hospital",
+          "firstName lastName doctorDetails.qualification doctorDetails.specialtyType doctorDetails.experience doctorDetails.hospital _id", // Add _id here to ensure doctor ID is included
       });
 
     res.status(200).json({
@@ -93,28 +93,32 @@ exports.getAllAppointments = async (req, res) => {
         appointmentTime: appointment.appointmentTime,
         patientName: appointment.patient
           ? `${appointment.patient.firstName} ${appointment.patient.lastName}`
-          : "Unknown", // Fallback for missing patient data
+          : "Unknown",
         patientPhoneNumber: appointment.patient
           ? appointment.patient.phoneNumber
           : "N/A",
         patientAge: appointment.patient ? appointment.patient.age : "N/A",
         patientGender: appointment.patient ? appointment.patient.gender : "N/A",
-        patientIssue: appointment.patientIssue || "N/A",
+        patientIssue: appointment.patient
+          ? appointment.patient.patientIssue
+          : "N/A",
         diseaseName: appointment.diseaseName,
+        doctorId: appointment.doctor ? appointment.doctor._id : null, // Add doctor ID to the response
+        patientId: appointment.patient ? appointment.patient._id : null,
         doctorName: appointment.doctor
           ? `${appointment.doctor.firstName} ${appointment.doctor.lastName}`
-          : "N/A", // Fallback for missing doctor data
-        doctorSpecialty: appointment.doctor
-          ? appointment.doctor.specialty
           : "N/A",
-        doctorQualification: appointment.doctor
-          ? appointment.doctor.qualification
+        doctorSpecialty: appointment.doctor && appointment.doctor.doctorDetails
+          ? appointment.doctor.doctorDetails.specialtyType
           : "N/A",
-        doctorExperience: appointment.doctor
-          ? appointment.doctor.experience
+        doctorQualification: appointment.doctor && appointment.doctor.doctorDetails
+          ? appointment.doctor.doctorDetails.qualification
           : "N/A",
-        doctorHospital: appointment.doctor
-          ? appointment.doctor.hospital
+        doctorExperience: appointment.doctor && appointment.doctor.doctorDetails
+          ? appointment.doctor.doctorDetails.experience
+          : "N/A",
+        doctorHospital: appointment.doctor && appointment.doctor.doctorDetails
+          ? appointment.doctor.doctorDetails.hospital.currentHospital
           : "N/A",
         patientAddress: appointment.patient
           ? appointment.patient.address
@@ -129,6 +133,7 @@ exports.getAllAppointments = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
 
 // @desc    Get Appointment by ID
 // @route   GET /api/appointments/:id
